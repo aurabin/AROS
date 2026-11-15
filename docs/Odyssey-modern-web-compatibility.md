@@ -6,7 +6,11 @@
 Preserve Odyssey's existing visual design, layout, menus, navigation, shortcuts and user workflows. Changes to web rendering must be isolated behind an engine integration layer.
 
 ## First step: source and license audit
-Locate the exact Odyssey source tree, revision, supported AROS targets and dependencies. Verify which WebKit branch it uses and whether existing platform abstractions can be reused. No Odyssey or WebKit source was identified by the initial repository code search; this must be resolved before implementation.
+The baseline is [deadwood2/OdysseyWebBrowser](https://github.com/deadwood2/OdysseyWebBrowser), branch `odyssey`, at revision [8e44b6d8](https://github.com/deadwood2/OdysseyWebBrowser/commit/8e44b6d8d2e8c57a59a878152b81304e220ceb7a). The project uses a WebKit-derived engine and the MUI port. This integration targets AROS x86-64 ABIv11. Upstream's build instructions specify an AROS cross-compiler at GCC 6.5.0 and a matching SDK built from `release-20241102` in both AROS and contrib. The published native SDK is a different build environment.
+
+The integration workflow checks out the pinned source, configures with the supplied SDK and packages the build output. A successful preflight verifies the integration scripts and upstream connectivity. The browser build and AROS guest test remain open.
+
+Before changing the engine, verify the applicable source licenses and map reusable platform abstractions at the pinned revision.
 
 ## Architectural options to benchmark
 1. Update existing WebKit port incrementally where practical; map obsolete dependencies and missing AROS APIs.
