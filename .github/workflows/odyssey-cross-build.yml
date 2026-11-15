@@ -119,9 +119,25 @@ jobs:
         shell: bash
         run: |
           bin=external-src/OdysseyWebBrowser/cross-build-x86_64-aros/bin
-          test -d "$bin"
-          find "$bin" -maxdepth 1 -type f -executable -exec file -- {} + > odyssey-binaries.log
-          grep -E 'ELF 64-bit.*(executable|pie executable).*x86-64' odyssey-binaries.log
+          test -s "$bin/OWB"
+          {
+            file -- "$bin/OWB"
+            sha256sum "$bin/OWB"
+            readelf -hW "$bin/OWB"
+          } > odyssey-binaries.log
+          # The AROS loader accepts the linked application as an ELF relocatable.
+          python3 - "$bin/OWB" <<'PY'
+          import struct
+          import sys
+
+          with open(sys.argv[1], "rb") as binary:
+              header = binary.read(64)
+          if len(header) != 64 or header[:8] != b"\x7fELF\x02\x01\x01\x0f":
+              sys.exit("OWB is not an AROS ELF64 little-endian binary")
+          elf_type, machine = struct.unpack_from("<HH", header, 16)
+          if machine != 62 or elf_type not in (1, 2, 3):
+              sys.exit(f"Unexpected OWB ELF type or machine: {elf_type}, {machine}")
+          PY
           tar -czf odyssey-x86_64-aros.tar.gz -C "$(dirname "$bin")" bin
           sha256sum odyssey-x86_64-aros.tar.gz > odyssey-x86_64-aros.tar.gz.sha256
       - name: Upload Odyssey binaries
