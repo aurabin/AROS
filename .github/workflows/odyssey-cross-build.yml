@@ -5,6 +5,7 @@ on:
       odyssey_commit:
         description: 'Full Odyssey upstream commit SHA (40 hex digits)'
         required: true
+        default: '8e44b6d8d2e8c57a59a878152b81304e220ceb7a'
         type: string
 jobs:
   cross-build:
@@ -40,7 +41,23 @@ jobs:
         run: |
           set -o pipefail
           make -C external-src/OdysseyWebBrowser/cross-build-x86_64-aros -j2 2>&1 | tee odyssey-build.log
-          test -d external-src/OdysseyWebBrowser/cross-build-x86_64-aros/bin
+      - name: Verify and package build output
+        shell: bash
+        run: |
+          bin=external-src/OdysseyWebBrowser/cross-build-x86_64-aros/bin
+          test -d "$bin"
+          find "$bin" -maxdepth 1 -type f -executable -exec file -- {} + > odyssey-binaries.log
+          grep -E 'ELF 64-bit.*(executable|pie executable).*x86-64' odyssey-binaries.log
+          tar -czf odyssey-x86_64-aros.tar.gz -C "$(dirname "$bin")" bin
+          sha256sum odyssey-x86_64-aros.tar.gz > odyssey-x86_64-aros.tar.gz.sha256
+      - name: Upload Odyssey binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: odyssey-x86_64-aros
+          path: |
+            odyssey-x86_64-aros.tar.gz
+            odyssey-x86_64-aros.tar.gz.sha256
+          if-no-files-found: error
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,4 +66,5 @@ jobs:
           path: |
             odyssey-configure.log
             odyssey-build.log
+            odyssey-binaries.log
           if-no-files-found: ignore
