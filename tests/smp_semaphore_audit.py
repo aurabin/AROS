@@ -43,6 +43,19 @@ for name, functions in FILES.items():
     if name.endswith("/releasesemaphore.c") and "ss_NestCount--" in source:
         if not re.search(r"ss_NestCount\s*<=\s*0", source):
             print("REVIEW: release has no explicit nest-count underflow guard")
+    # A scheduler transition is a separate SMP correctness boundary.
+    if name.endswith("/semaphores.c") and WAIT.search(source):
+        wait_source = ROOT / "rom/exec/wait.c"
+        if not wait_source.is_file():
+            print("FAIL missing scheduler wait implementation: rom/exec/wait.c")
+            failed = True
+        else:
+            wait_text = wait_source.read_text(encoding="utf-8")
+            if "KrnSwitch()" not in wait_text or "TS_WAIT" not in wait_text:
+                print("FAIL unexpected Wait() scheduling protocol")
+                failed = True
+            else:
+                print("REVIEW: Wait() sets TS_WAIT before KrnSwitch(); inspect cross-CPU signal race")
     # A Forbid/Permit pair is not proof of cross-CPU exclusion.
     if re.search(r"\bForbid\s*\(", source) and re.search(r"\bPermit\s*\(", source):
         print(f"UNRESOLVED SMP REVIEW: {name} uses Forbid/Permit for arbitration")
