@@ -6,7 +6,12 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools" / "odyssey"
-SCRIPTS = ("fetch_upstream.sh", "build_x86_64.sh", "toolchain_preflight.sh")
+SCRIPTS = (
+    "fetch_upstream.sh",
+    "build_x86_64.sh",
+    "configure_x86_64.sh",
+    "toolchain_preflight.sh",
+)
 
 
 class IntegrationPreflight(unittest.TestCase):
@@ -28,7 +33,8 @@ class IntegrationPreflight(unittest.TestCase):
         data = (TOOLS / "build_x86_64.sh").read_text()
         self.assertIn("x86_64-aros-gcc", data)
         self.assertIn("x86_64-aros-g++", data)
-        self.assertIn("rebuild.sh", data)
+        self.assertIn("configure_x86_64.sh", data)
+        self.assertNotIn("./rebuild.sh", data)
 
     def test_upstream_revision_is_not_falsely_pinned(self):
         data = (TOOLS / "fetch_upstream.sh").read_text()
