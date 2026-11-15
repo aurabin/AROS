@@ -151,6 +151,14 @@ ULONG InternalAttemptSemaphore(struct SignalSemaphore *sigSem, struct Task *owne
     struct Task *ThisTask = GET_THIS_TASK;
     ULONG retval = TRUE;
 
+    /*
+     * AttemptSemaphore is a task-context operation. Without a current
+     * task an exclusive request could be mistaken for a shared request
+     * (both owner and ss_Owner may be NULL). Do not mutate the semaphore.
+     */
+    if (!ThisTask || ThisTask->tc_State == TS_REMOVED)
+        return FALSE;
+
     if (!CheckSemaphore(sigSem, caller, SysBase))
         return FALSE;  /* A crude attempt to recover... */
 
