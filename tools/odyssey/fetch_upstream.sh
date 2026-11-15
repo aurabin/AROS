@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Source integration only: do not vendor large third-party trees into AROS.
-# Odyssey's development branch is 'odyssey', not 'master'.
+# External source checkout; no vendoring into the AROS source tree.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DEST="${1:-$ROOT/external-src/OdysseyWebBrowser}"
 if [[ -e "$DEST" ]]; then
@@ -10,7 +9,13 @@ if [[ -e "$DEST" ]]; then
 fi
 mkdir -p "$(dirname "$DEST")"
 git clone --branch odyssey --single-branch https://github.com/deadwood2/OdysseyWebBrowser.git "$DEST"
+if [[ -n "${ODYSSEY_COMMIT:-}" ]]; then
+  git -C "$DEST" checkout --detach "$ODYSSEY_COMMIT"
+  printf 'Requested pinned revision: %s\n' "$ODYSSEY_COMMIT"
+else
+  printf 'WARNING: upstream odyssey branch is moving; set ODYSSEY_COMMIT to pin a revision.\n' >&2
+fi
 printf 'Odyssey source checkout: %s\n' "$DEST"
-printf 'Pinned commit: '
+printf 'Checked-out commit: '
 git -C "$DEST" rev-parse HEAD
-printf 'Before building, follow upstream README cross-compiler/SDK instructions.\n'
+printf 'Follow upstream README for matching cross-compiler and SDK requirements.\n'
