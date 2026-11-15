@@ -2,6 +2,17 @@
 
 Status: design proposal; not implemented or hardware-tested.
 
+## Upstream and build targets
+
+| Source | Relevance to AROS Wizard |
+| --- | --- |
+| [AROS Development Team](https://github.com/aros-development-team/AROS) | Active multiplatform operating-system development. Its CI lists a dedicated `pc-x86_64-smp` target. Check the actual nightly and guest results before claiming SMP support. |
+| [deadwood2/AROS Core](https://github.com/deadwood2/AROS) | Direct upstream of this fork. Core covers native and Linux-hosted x86-64 ABIv11 and an Amiga m68k target. |
+| [deadwood2 alternatives](https://github.com/deadwood2/AROS#alternatives) | Native i386 ABIv0 and Linux x86-64 AxRuntime have distinct branches and build targets. |
+| [Odyssey](https://github.com/deadwood2/OdysseyWebBrowser) | Separate WebKit/MUI application. See the [Odyssey baseline](Odyssey-modern-web-compatibility.md) for the pinned source and SDK. |
+
+Use the documented ABI for each build. The ABIv11 Core compatibility policy covers the application ABI and selected public APIs. Kernel and driver internals need validation against the exact target revision.
+
 ## Scope
 AROS Wizard is an AROS-wide configuration and diagnostic project, **not** part of BOINC. This document collects proposed work for review before any implementation is merged into master.
 
