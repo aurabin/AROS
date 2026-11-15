@@ -73,11 +73,20 @@ jobs:
               "$workspace/AROS/configure" --target="$CONFIGURE_TARGET" --with-aros-toolchain-install="$TOOLCHAIN_DIR" --with-portssources="$workspace/portssources" --with-aros-toolchain=yes --enable-debug
               make -j2
               # Odyssey uses these target libraries from the matching AROS contrib tree.
-              make -j2 development-cairo development-libxml2
+              # Top-level make starts a separate MetaMake process for each target.
+              # Run the targets in sequence so their shared SDK dependencies are written once.
+              make -j2 development-cairo
+              make -j2 development-libxml2
             )
             sdk="$BUILD_DIR/bin/linux-x86_64/AROS/Development"
             test -d "$sdk/include"
             test -d "$sdk/lib"
+            for required in include/cairo/cairo.h include/freetype include/libxml2/libxml/parser.h lib/libz.a; do
+              if [[ ! -e "$sdk/$required" ]]; then
+                printf 'Missing AROS SDK output: %s\n' "$sdk/$required" >&2
+                exit 2
+              fi
+            done
             mkdir "$workspace/compiler-wrappers"
             for compiler in x86_64-aros-gcc x86_64-aros-g++; do
               test -x "$TOOLCHAIN_DIR/$compiler"
