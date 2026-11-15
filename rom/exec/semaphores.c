@@ -17,6 +17,14 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
 {
     /* TODO: Introduce AlertContext for this */
 
+    /* Reject invalid pointers before inspecting semaphore fields. */
+    if (!sigSem)
+    {
+        kprintf("%s called with a NULL semaphore!\n", caller->function);
+        Exec_ExtAlert(AN_SemCorrupt, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
+        return FALSE;
+    }
+
     if (KernelBase && KrnIsSuper())
     {
         /* FindTask() is called only here, for speedup */
