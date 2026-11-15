@@ -56,6 +56,18 @@ for name, functions in FILES.items():
                 failed = True
             else:
                 print("REVIEW: Wait() sets TS_WAIT before KrnSwitch(); inspect cross-CPU signal race")
+    if name.endswith("/semaphores.c") and WAIT.search(source):
+        signal_source = ROOT / "rom/exec/signal.c"
+        if not signal_source.is_file():
+            print("FAIL missing signal implementation: rom/exec/signal.c")
+            failed = True
+        else:
+            signal_text = signal_source.read_text(encoding="utf-8")
+            for required in ("__AROS_ATOMIC_OR_L", "TS_WAIT", "krnSysCallReschedTask"):
+                if required not in signal_text:
+                    print(f"FAIL unexpected SMP signal protocol: missing {required}")
+                    failed = True
+            print("REVIEW: atomic signal flags do not alone serialize TS_WAIT/TS_READY transitions")
     # A Forbid/Permit pair is not proof of cross-CPU exclusion.
     if re.search(r"\bForbid\s*\(", source) and re.search(r"\bPermit\s*\(", source):
         print(f"UNRESOLVED SMP REVIEW: {name} uses Forbid/Permit for arbitration")
