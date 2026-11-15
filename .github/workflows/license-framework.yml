@@ -1,0 +1,22 @@
+name: Third-party license manifest
+on:
+  push:
+    paths:
+      - 'tools/license_framework/**'
+      - '.github/workflows/license-framework.yml'
+  pull_request:
+    paths:
+      - 'tools/license_framework/**'
+      - '.github/workflows/license-framework.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python tools/license_framework/check_manifest.py tools/license_framework/third_party_manifest.json --root .
+      - run: cd tools/license_framework && python -m unittest discover -v
