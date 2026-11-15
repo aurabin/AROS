@@ -68,6 +68,13 @@ for name, functions in FILES.items():
                     print(f"FAIL unexpected SMP signal protocol: missing {required}")
                     failed = True
             print("REVIEW: atomic signal flags do not alone serialize TS_WAIT/TS_READY transitions")
+    # An SMP fix must not hold an arbitration spinlock over Wait().
+    if name.endswith("/semaphores.c"):
+        if re.search(r"EXEC_LOCK_[A-Z_]+\\([^;]*;[\\s\\S]*?Wait\\s*\\(", source):
+            print("REVIEW: inspect possible lock held across Wait()")
+    if name.endswith("/releasesemaphore.c"):
+        if "sigSem->ss_NestCount--" in source and "sigSem->ss_QueueCount--" in source:
+            print("REVIEW: release counter updates must be protected by the same cross-CPU lock")
     # A Forbid/Permit pair is not proof of cross-CPU exclusion.
     if re.search(r"\bForbid\s*\(", source) and re.search(r"\bPermit\s*\(", source):
         print(f"UNRESOLVED SMP REVIEW: {name} uses Forbid/Permit for arbitration")
