@@ -43,8 +43,15 @@ jobs:
             workspace="$PWD"
             source "$workspace/AROS/scripts/rebuild-conf"
 
+            # Intel's original archive URL returns HTTP 403 on the hosted runner.
+            # Verify the mirror against the OpenEmbedded release checksum.
+            mkdir -p "$workspace/portssources"
+            archive="$workspace/portssources/acpica-unix-20230331.tar.gz"
+            curl --fail --location --retry 3 --output "$archive" https://mirrors.edge.kernel.org/yocto-sources/acpica-unix-20230331.tar.gz
+            printf '%s  %s\n' 0c5d695d605aaa61709f3c63f57a1a99b8902291723998446b0813b57ac310e2 "$archive" | sha256sum --check
+
             process_selection 1
-            mkdir -p "$BUILD_DIR" "$TOOLCHAIN_DIR" "$workspace/portssources"
+            mkdir -p "$BUILD_DIR" "$TOOLCHAIN_DIR"
             (
               cd "$BUILD_DIR"
               "$workspace/AROS/configure" --target="$CONFIGURE_TARGET" --with-aros-toolchain-install="$TOOLCHAIN_DIR" --with-portssources="$workspace/portssources"
