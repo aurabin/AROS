@@ -1,5 +1,9 @@
 name: Odyssey x86-64 cross-build
 on:
+  push:
+    branches: [feature/aros-wizard-roadmap]
+    paths:
+      - '.github/workflows/odyssey-cross-build.yml'
   workflow_dispatch:
     inputs:
       odyssey_commit:
@@ -9,20 +13,63 @@ on:
         type: string
 jobs:
   cross-build:
-    # Self-hosted runner must provide GCC 6.5.0 and matching AROS SDK.
-    # Set AROS_SDK_DIR on the runner to its Development directory.
-    runs-on: [self-hosted, linux, x64, aros-x86_64-sdk]
-    timeout-minutes: 180
+    runs-on: ubuntu-22.04
+    timeout-minutes: 330
     permissions:
       contents: read
     env:
-      ODYSSEY_COMMIT: ${{ inputs.odyssey_commit }}
+      ODYSSEY_COMMIT: ${{ inputs.odyssey_commit || '8e44b6d8d2e8c57a59a878152b81304e220ceb7a' }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate requested source revision
         shell: bash
         run: |
           [[ "$ODYSSEY_COMMIT" =~ ^[a-fA-F0-9]{40}$ ]] || { echo 'Expected full 40-character SHA' >&2; exit 2; }
+      - name: Install AROS and Odyssey host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gawk bison flex bzip2 netpbm autoconf automake libx11-dev libxext-dev libc6-dev liblzo2-dev libxxf86vm-dev libpng-dev gcc-multilib g++-multilib libsdl1.2-dev byacc python3-mako libxcursor-dev cmake genisoimage dh-make yasm nasm gperf ruby ninja-build libtool texinfo wget
+      - name: Build AROS cross-compiler and SDK from pinned sources
+        shell: bash
+        run: |
+          {
+            cd "$RUNNER_TEMP"
+            mkdir aros-build
+            cd aros-build
+            git clone --depth 1 --branch release-20241102 https://github.com/deadwood2/AROS.git AROS
+            git clone --depth 1 --branch release-20241102 https://github.com/deadwood2/contrib.git AROS/contrib
+            test "$(git -C AROS rev-parse HEAD)" = e3babd663cdaab5ae643a2a7dcf966c7ccd3490e
+            test "$(git -C AROS/contrib rev-parse HEAD)" = 4af836fd6d2720a4a72000ad635f706c03b92be9
+            workspace="$PWD"
+            source "$workspace/AROS/scripts/rebuild-conf"
+
+            process_selection 1
+            mkdir -p "$BUILD_DIR" "$TOOLCHAIN_DIR" "$workspace/portssources"
+            (
+              cd "$BUILD_DIR"
+              "$workspace/AROS/configure" --target="$CONFIGURE_TARGET" --with-aros-toolchain-install="$TOOLCHAIN_DIR" --with-portssources="$workspace/portssources"
+              make -j2 -s crosstools
+            )
+
+            process_selection 2
+            mkdir -p "$BUILD_DIR"
+            (
+              cd "$BUILD_DIR"
+              "$workspace/AROS/configure" --target="$CONFIGURE_TARGET" --with-aros-toolchain-install="$TOOLCHAIN_DIR" --with-portssources="$workspace/portssources" --with-aros-toolchain=yes --enable-debug
+              make -j2
+            )
+            sdk="$BUILD_DIR/bin/linux-x86_64/AROS/Development"
+            test -d "$sdk/include"
+            test -d "$sdk/lib"
+            mkdir "$workspace/compiler-wrappers"
+            for compiler in x86_64-aros-gcc x86_64-aros-g++; do
+              test -x "$TOOLCHAIN_DIR/$compiler"
+              printf '#!/usr/bin/env bash\nexec %q --sysroot=%q "$@"\n' "$TOOLCHAIN_DIR/$compiler" "$sdk" > "$workspace/compiler-wrappers/$compiler"
+              chmod +x "$workspace/compiler-wrappers/$compiler"
+            done
+            printf '%s\n' "$workspace/compiler-wrappers" >> "$GITHUB_PATH"
+            printf 'AROS_SDK_DIR=%s\n' "$sdk" >> "$GITHUB_ENV"
+          } 2>&1 | tee "$GITHUB_WORKSPACE/aros-sdk-build.log"
       - name: Check toolchain
         run: bash tools/odyssey/toolchain_preflight.sh
       - name: Check compiler versions
@@ -64,6 +111,7 @@ jobs:
         with:
           name: odyssey-build-logs
           path: |
+            aros-sdk-build.log
             odyssey-configure.log
             odyssey-build.log
             odyssey-binaries.log
