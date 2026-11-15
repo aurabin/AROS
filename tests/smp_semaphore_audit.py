@@ -41,7 +41,7 @@ for name, functions in FILES.items():
     if name.endswith("/releasesemaphore.c") and WAKE.search(source):
         print("REVIEW: wakeup must preserve ownership handoff and lock ordering")
     if name.endswith("/releasesemaphore.c") and "ss_NestCount--" in source:
-        if not re.search(r"ss_NestCount\\s*<=\\s*0", source):
+        if not re.search(r"ss_NestCount\s*<=\s*0", source):
             print("REVIEW: release has no explicit nest-count underflow guard")
     # A Forbid/Permit pair is not proof of cross-CPU exclusion.
     if re.search(r"\bForbid\s*\(", source) and re.search(r"\bPermit\s*\(", source):
