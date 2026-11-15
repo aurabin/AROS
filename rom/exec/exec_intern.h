@@ -89,6 +89,7 @@ struct IntExecBase
     spinlock_t                  LibListSpinLock;
     spinlock_t                  PortListSpinLock;
     spinlock_t                  SemListSpinLock;
+    spinlock_t                  SignalSemaphoreSpinLock;         /* Cross-CPU semaphore arbitration */
 
     /* .. and then scheduling related locks ... */
     spinlock_t                  TaskRunningSpinLock;
