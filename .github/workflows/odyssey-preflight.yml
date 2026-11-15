@@ -1,0 +1,34 @@
+name: Odyssey integration preflight
+on:
+  push:
+    paths:
+      - 'tools/odyssey/**'
+      - 'tests/test_odyssey_integration.py'
+      - '.github/workflows/odyssey-preflight.yml'
+      - '.github/workflows/odyssey-cross-build.yml'
+  pull_request:
+    paths:
+      - 'tools/odyssey/**'
+      - 'tests/test_odyssey_integration.py'
+      - '.github/workflows/odyssey-preflight.yml'
+      - '.github/workflows/odyssey-cross-build.yml'
+  workflow_dispatch:
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run regression checks
+        run: python3 -m unittest discover -s tests -p 'test_odyssey_integration.py' -v
+      - name: Check Odyssey upstream connectivity
+        run: git ls-remote --exit-code --heads https://github.com/deadwood2/OdysseyWebBrowser.git odyssey
+      - name: Report toolchain availability (informational)
+        shell: bash
+        run: |
+          if bash tools/odyssey/toolchain_preflight.sh; then
+            echo 'AROS cross-compiler available; separate build validation is still required.'
+          else
+            echo 'AROS cross-compiler absent: full browser build is blocked.'
+          fi
