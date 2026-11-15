@@ -89,6 +89,10 @@ AROS_UFH3(IPTR, signal_hook,
 
     struct Task *thisTask = GET_THIS_TASK;
 
+    /* A NULL target cannot have a signal state or CPU affinity. */
+    if (!task)
+        return;
+
 #if defined(__AROSEXEC_SMP__)
     struct KernelBase *KernelBase = __kernelBase;
     int cpunum = KrnGetCPUNumber();
