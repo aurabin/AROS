@@ -50,6 +50,10 @@ jobs:
             curl --fail --location --retry 3 --output "$archive" https://mirrors.edge.kernel.org/yocto-sources/acpica-unix-20230331.tar.gz
             printf '%s  %s\n' 0c5d695d605aaa61709f3c63f57a1a99b8902291723998446b0813b57ac310e2 "$archive" | sha256sum --check
 
+            archive="$workspace/portssources/mesa-20.0.8.tar.xz"
+            curl --fail --location --retry 3 --output "$archive" https://archive.mesa3d.org/older-versions/20.x/mesa-20.0.8.tar.xz
+            printf '%s  %s\n' 6cf0c010df89680f9b2bc6432ff01400031795e39bceda7535fa00af06740b6c "$archive" | sha256sum --check
+
             process_selection 1
             mkdir -p "$BUILD_DIR" "$TOOLCHAIN_DIR"
             (
