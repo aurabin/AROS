@@ -30,7 +30,12 @@ int wizard_file_size(const char *path, unsigned long long *size) {
     unsigned long long total = 0;
     struct stat st;
     if (!path || !*path || !size) return 0;
-    if (stat(path, &st) != 0 || !(st.st_mode & S_IFREG)) return 0;
+    if (stat(path, &st) != 0) return 0;
+#if defined(_WIN32)
+    if (!(st.st_mode & _S_IFREG)) return 0;
+#else
+    if (!S_ISREG(st.st_mode)) return 0;
+#endif
     fp = fopen(path, "rb");
     if (!fp) return 0;
     while ((n = fread(buf, 1, sizeof(buf), fp)) > 0) {
