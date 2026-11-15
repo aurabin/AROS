@@ -7,6 +7,8 @@ on:
     paths:
       - 'rom/exec/exec_locks.c'
       - 'tests/smp_exec_lock_flags.py'
+      - 'rom/exec/wait.c'
+      - 'tests/smp_wait_signal_ack.py'
       - '.github/workflows/smp-lock-flags.yml'
 jobs:
   lock-flags:
@@ -14,4 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate lock flag bitmasks
-        run: python3 tests/smp_exec_lock_flags.py
+        run: |
+          python3 tests/smp_exec_lock_flags.py
+          python3 tests/smp_wait_signal_ack.py
