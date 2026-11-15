@@ -33,6 +33,16 @@ for name in functions:
             errors.append(f"{name}: missing bitwise check for {flag}")
         if re.search(r"flags\s*&&\s*" + flag, body):
             errors.append(f"{name}: incorrect logical check for {flag}")
+# Validate the truth table for the two independent lock flags.
+# This is a host-side model of the C bitmask conditions, not a kernel runtime test.
+LOCKF_DISABLE = 1
+LOCKF_FORBID = 2
+for flags, expected in ((0, (False, False)), (1, (True, False)),
+                        (2, (False, True)), (3, (True, True))):
+    actual = (bool(flags & LOCKF_DISABLE), bool(flags & LOCKF_FORBID))
+    if actual != expected:
+        errors.append(f"incorrect flag truth table for {flags}")
+
 if errors:
     print("FAIL: " + "; ".join(errors))
     sys.exit(1)
