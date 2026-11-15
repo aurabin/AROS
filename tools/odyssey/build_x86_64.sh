@@ -26,6 +26,5 @@ printf 'Odyssey commit: %s\n' "$(git -C "$SOURCE" rev-parse HEAD)"
 printf 'C compiler: %s\n' "$(x86_64-aros-gcc -dumpversion)"
 printf 'C++ compiler: %s\n' "$(x86_64-aros-g++ -dumpversion)"
 if [[ "${1:-}" == '--run-configure' ]]; then
-  cd "$SOURCE"
-  ./rebuild.sh
+  ODYSSEY_SOURCE="$SOURCE" exec bash "$ROOT/tools/odyssey/configure_x86_64.sh"
 fi
