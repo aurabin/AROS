@@ -11,6 +11,11 @@ on:
       - 'tests/test_odyssey_integration.py'
       - '.github/workflows/odyssey-preflight.yml'
   workflow_dispatch:
+    inputs:
+      cross_build:
+        description: 'Attempt full Odyssey cross-build (requires AROS toolchain on runner)'
+        type: boolean
+        default: false
 jobs:
   preflight:
     runs-on: ubuntu-latest
@@ -26,3 +31,20 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_odyssey_integration.py' -v
       - name: Check Odyssey upstream connectivity
         run: git ls-remote --heads https://github.com/deadwood2/OdysseyWebBrowser.git odyssey
+  cross-build:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.cross_build }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch Odyssey source
+        run: bash tools/odyssey/fetch_upstream.sh
+      - name: Check AROS cross-compiler
+        run: |
+          command -v x86_64-aros-gcc || { echo 'AROS toolchain is not installed on this runner; configure a verified SDK/toolchain before enabling this job.' >&2; exit 2; }
+          command -v x86_64-aros-g++ || exit 2
+      - name: Run upstream configure
+        run: bash tools/odyssey/build_x86_64.sh --run-configure
+      - name: Compile Odyssey
+        run: make -C external-src/OdysseyWebBrowser/cross-build-x86_64-aros -j2
