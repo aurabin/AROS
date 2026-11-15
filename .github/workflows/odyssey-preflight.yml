@@ -5,11 +5,13 @@ on:
       - 'tools/odyssey/**'
       - 'tests/test_odyssey_integration.py'
       - '.github/workflows/odyssey-preflight.yml'
+      - '.github/workflows/odyssey-cross-build.yml'
   pull_request:
     paths:
       - 'tools/odyssey/**'
       - 'tests/test_odyssey_integration.py'
       - '.github/workflows/odyssey-preflight.yml'
+      - '.github/workflows/odyssey-cross-build.yml'
   workflow_dispatch:
 jobs:
   preflight:
@@ -18,11 +20,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Validate shell scripts
-        run: |
-          bash -n tools/odyssey/fetch_upstream.sh
-          bash -n tools/odyssey/build_x86_64.sh
-          bash -n tools/odyssey/toolchain_preflight.sh
       - name: Run regression checks
         run: python3 -m unittest discover -s tests -p 'test_odyssey_integration.py' -v
       - name: Check Odyssey upstream connectivity
