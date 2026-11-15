@@ -8,8 +8,8 @@ on:
         type: string
 jobs:
   cross-build:
-    # Requires a separately provisioned Linux runner with AROS SDK and GCC 6.5.0.
-    # No runner with these labels is registered by this workflow.
+    # Self-hosted runner must provide GCC 6.5.0 and matching AROS SDK.
+    # Set AROS_SDK_DIR on the runner to its Development directory.
     runs-on: [self-hosted, linux, x64, aros-x86_64-sdk]
     timeout-minutes: 180
     permissions:
@@ -27,17 +27,14 @@ jobs:
       - name: Check compiler versions
         shell: bash
         run: |
-          x86_64-aros-gcc -dumpversion
-          x86_64-aros-g++ -dumpversion
-          [[ "$(x86_64-aros-gcc -dumpversion)" == 6.5.0 ]] || { echo 'Expected upstream GCC 6.5.0' >&2; exit 2; }
+          [[ "$(x86_64-aros-gcc -dumpversion)" == 6.5.0 ]] || { echo 'Expected GCC 6.5.0' >&2; exit 2; }
       - name: Checkout Odyssey revision
         run: bash tools/odyssey/fetch_upstream.sh
       - name: Configure Odyssey
         shell: bash
         run: |
-          # Upstream rebuild.sh has an interactive menu; option 11 selects x86_64-aros Release.
-          printf '11\n' | bash tools/odyssey/build_x86_64.sh --run-configure 2>&1 | tee odyssey-configure.log
-          test -d external-src/OdysseyWebBrowser/cross-build-x86_64-aros
+          set -o pipefail
+          bash tools/odyssey/configure_x86_64.sh 2>&1 | tee odyssey-configure.log
       - name: Compile Odyssey
         shell: bash
         run: |
