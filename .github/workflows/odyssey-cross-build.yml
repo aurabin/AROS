@@ -54,6 +54,10 @@ jobs:
             curl --fail --location --retry 3 --output "$archive" https://archive.mesa3d.org/older-versions/20.x/mesa-20.0.8.tar.xz
             printf '%s  %s\n' 6cf0c010df89680f9b2bc6432ff01400031795e39bceda7535fa00af06740b6c "$archive" | sha256sum --check
 
+            archive="$workspace/portssources/glu-9.0.2.tar.xz"
+            curl --fail --location --retry 3 --output "$archive" https://archive.mesa3d.org/glu/glu-9.0.2.tar.xz
+            printf '%s  %s\n' 6e7280ff585c6a1d9dfcdf2fca489251634b3377bfc33c29e4002466a38d02d4 "$archive" | sha256sum --check
+
             process_selection 1
             mkdir -p "$BUILD_DIR" "$TOOLCHAIN_DIR"
             (
