@@ -16,6 +16,13 @@ for required in "$SDK/include/cairo" "$SDK/include/freetype" "$SDK/include/libxm
     exit 2
   fi
 done
+# Resolve ICU from the target SDK. The MUI port enables ICU without finding it.
+for required in include/unicode/ustring.h lib/libicui18n.a lib/libicuuc.a lib/libicudata.a; do
+  if [[ ! -f "$SDK/$required" ]]; then
+    printf 'Missing AROS ICU dependency: %s\n' "$SDK/$required" >&2
+    exit 2
+  fi
+done
 if [[ ! -f "$SOURCE/Source/cmake/AROS.cmake" ]]; then
   echo 'Odyssey Source/cmake/AROS.cmake missing; fetch upstream first.' >&2
   exit 2
@@ -27,6 +34,26 @@ if [[ -e "$BUILD/CMakeCache.txt" && "${ODYSSEY_RECONFIGURE:-0}" != 1 ]]; then
   echo 'Existing CMake cache found; set ODYSSEY_RECONFIGURE=1 to reconfigure without deleting files.' >&2
   exit 2
 fi
+# Exercise both ICU APIs and the static target archives before configuring WebKit.
+probe_dir="$(mktemp -d)"
+trap 'rm -f -- "$probe_dir/icu-check" "$probe_dir/icu-check.cpp"; rmdir -- "$probe_dir"' EXIT
+cat > "$probe_dir/icu-check.cpp" <<'EOF'
+#include <unicode/ucol.h>
+#include <unicode/ustring.h>
+
+int main()
+{
+    UErrorCode status = U_ZERO_ERROR;
+    UCollator* collator = ucol_open("en", &status);
+    ucol_close(collator);
+    const UChar value[] = { 0 };
+    return U_FAILURE(status) || u_strlen(value);
+}
+EOF
+icu_libraries=("$SDK/lib/libicui18n.a" "$SDK/lib/libicuuc.a" "$SDK/lib/libicudata.a")
+x86_64-aros-g++ -static-libstdc++ -I"$SDK/include" "$probe_dir/icu-check.cpp" \
+  "${icu_libraries[@]}" -o "$probe_dir/icu-check"
+
 cmake -S "$SOURCE" -B "$BUILD" \
   -DCMAKE_TOOLCHAIN_FILE="$SOURCE/Source/cmake/AROS.cmake" \
   -DCMAKE_EXE_LINKER_FLAGS=-static-libstdc++ \
@@ -38,4 +65,6 @@ cmake -S "$SOURCE" -B "$BUILD" \
   -DCAIRO_INCLUDE_DIRS="$SDK/include/cairo/" \
   -DFREETYPE_INCLUDE_DIRS="$SDK/include/freetype/" \
   -DLIBXML2_INCLUDE_DIR="$SDK/include/libxml2/" \
+  -DICU_INCLUDE_DIRS="$SDK/include" \
+  "-DICU_LIBRARIES=${icu_libraries[0]};${icu_libraries[1]};${icu_libraries[2]}" \
   -DZLIB_LIBRARIES="$SDK/lib/libz.a"
