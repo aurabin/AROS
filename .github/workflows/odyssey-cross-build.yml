@@ -1,0 +1,55 @@
+name: Odyssey x86-64 cross-build
+on:
+  workflow_dispatch:
+    inputs:
+      odyssey_commit:
+        description: 'Full Odyssey upstream commit SHA (40 hex digits)'
+        required: true
+        type: string
+jobs:
+  cross-build:
+    # Requires a separately provisioned Linux runner with AROS SDK and GCC 6.5.0.
+    # No runner with these labels is registered by this workflow.
+    runs-on: [self-hosted, linux, x64, aros-x86_64-sdk]
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    env:
+      ODYSSEY_COMMIT: ${{ inputs.odyssey_commit }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate requested source revision
+        shell: bash
+        run: |
+          [[ "$ODYSSEY_COMMIT" =~ ^[a-fA-F0-9]{40}$ ]] || { echo 'Expected full 40-character SHA' >&2; exit 2; }
+      - name: Check toolchain
+        run: bash tools/odyssey/toolchain_preflight.sh
+      - name: Check compiler versions
+        shell: bash
+        run: |
+          x86_64-aros-gcc -dumpversion
+          x86_64-aros-g++ -dumpversion
+          [[ "$(x86_64-aros-gcc -dumpversion)" == 6.5.0 ]] || { echo 'Expected upstream GCC 6.5.0' >&2; exit 2; }
+      - name: Checkout Odyssey revision
+        run: bash tools/odyssey/fetch_upstream.sh
+      - name: Configure Odyssey
+        shell: bash
+        run: |
+          # Upstream rebuild.sh has an interactive menu; option 11 selects x86_64-aros Release.
+          printf '11\n' | bash tools/odyssey/build_x86_64.sh --run-configure 2>&1 | tee odyssey-configure.log
+          test -d external-src/OdysseyWebBrowser/cross-build-x86_64-aros
+      - name: Compile Odyssey
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C external-src/OdysseyWebBrowser/cross-build-x86_64-aros -j2 2>&1 | tee odyssey-build.log
+          test -d external-src/OdysseyWebBrowser/cross-build-x86_64-aros/bin
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: odyssey-build-logs
+          path: |
+            odyssey-configure.log
+            odyssey-build.log
+          if-no-files-found: ignore
