@@ -10,6 +10,12 @@ if [[ -z "$SDK" || ! -d "$SDK/include" || ! -d "$SDK/lib" ]]; then
   echo 'Set AROS_SDK_DIR to the matching AROS Development directory (include/ and lib/ required).' >&2
   exit 2
 fi
+for required in "$SDK/include/cairo" "$SDK/include/freetype" "$SDK/include/libxml2" "$SDK/lib/libz.a"; do
+  if [[ ! -e "$required" ]]; then
+    printf 'Missing AROS SDK dependency: %s\n' "$required" >&2
+    exit 2
+  fi
+done
 if [[ ! -f "$SOURCE/Source/cmake/AROS.cmake" ]]; then
   echo 'Odyssey Source/cmake/AROS.cmake missing; fetch upstream first.' >&2
   exit 2
