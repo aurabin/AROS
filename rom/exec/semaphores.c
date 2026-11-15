@@ -23,7 +23,7 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
         struct Task *ThisTask = GET_THIS_TASK;
 
         kprintf("%s called in supervisor mode!!!\n"
-                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, ThisTask->tc_Node.ln_Name);
+                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, (ThisTask && ThisTask->tc_Node.ln_Name) ? ThisTask->tc_Node.ln_Name : "<no task>");
         Exec_ExtAlert(ACPU_PrivErr & ~AT_DeadEnd, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
 
         return FALSE;
@@ -36,7 +36,7 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
         struct Task *ThisTask = GET_THIS_TASK;
 
         kprintf("%s called on a not initialized semaphore!!!\n"
-                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, ThisTask->tc_Node.ln_Name);
+                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, (ThisTask && ThisTask->tc_Node.ln_Name) ? ThisTask->tc_Node.ln_Name : "<no task>");
         Exec_ExtAlert(AN_SemCorrupt, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
 
         return FALSE;
