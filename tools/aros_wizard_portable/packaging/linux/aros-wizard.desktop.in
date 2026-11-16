@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=AROS Wizard
+GenericName=AROS Host Diagnostics
+Comment=Read-only AROS Wizard host diagnostics
+Exec=aros-wizard --diagnose
+Icon=aros-wizard
+Terminal=true
+Categories=System;Utility;
+Keywords=AROS;Wizard;Linux;
