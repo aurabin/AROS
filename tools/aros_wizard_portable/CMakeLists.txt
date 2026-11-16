@@ -23,3 +23,13 @@ install(TARGETS aros-wizard RUNTIME DESTINATION bin)
 if(WIN32)
   install(TARGETS aros-wizard-reactos RUNTIME DESTINATION bin)
 endif()
+
+# Linux desktop icon and launcher; keep other host installations unchanged.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/aros-wizard-linux-cat-penguin.svg"
+    DESTINATION share/icons/hicolor/scalable/apps
+    RENAME aros-wizard.svg)
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/packaging/linux/aros-wizard.desktop.in"
+    DESTINATION share/applications
+    RENAME aros-wizard.desktop)
+endif()
