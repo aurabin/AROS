@@ -1,0 +1,46 @@
+cmake_minimum_required(VERSION 3.10)
+project(aros_wizard_portable VERSION 0.2.0 LANGUAGES C)
+add_library(wizard_core STATIC wizard_core.c)
+target_include_directories(wizard_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+set_target_properties(wizard_core PROPERTIES C_STANDARD 99 C_STANDARD_REQUIRED YES)
+add_executable(aros-wizard aros_wizard.c)
+target_link_libraries(aros-wizard PRIVATE wizard_core)
+set_target_properties(aros-wizard PROPERTIES C_STANDARD 99 C_STANDARD_REQUIRED YES)
+if(WIN32)
+  add_executable(aros-wizard-reactos WIN32 reactos_gui.c)
+  target_link_libraries(aros-wizard-reactos PRIVATE wizard_core user32 gdi32)
+  set_target_properties(aros-wizard-reactos PROPERTIES C_STANDARD 99 C_STANDARD_REQUIRED YES)
+endif()
+include(CTest)
+if(BUILD_TESTING)
+  add_test(NAME wizard_help COMMAND aros-wizard --help)
+  add_test(NAME wizard_platform COMMAND aros-wizard --platform)
+  add_test(NAME wizard_diagnose COMMAND aros-wizard --diagnose)
+  add_test(NAME wizard_missing_path COMMAND aros-wizard --check-path "${CMAKE_CURRENT_SOURCE_DIR}/definitely-not-an-aros-image.iso")
+  set_tests_properties(wizard_missing_path PROPERTIES WILL_FAIL TRUE)
+endif()
+install(TARGETS aros-wizard RUNTIME DESTINATION bin)
+if(WIN32)
+  install(TARGETS aros-wizard-reactos RUNTIME DESTINATION bin)
+endif()
+
+# Linux desktop icon and launcher; keep other host installations unchanged.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/aros-wizard-linux-cat-penguin.svg"
+    DESTINATION share/icons/hicolor/scalable/apps
+    RENAME aros-wizard.svg)
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/packaging/linux/aros-wizard.desktop.in"
+    DESTINATION share/applications
+    RENAME aros-wizard.desktop)
+endif()
+
+# Native macOS application bundle using Cocoa.
+if(APPLE)
+  enable_language(OBJC)
+  add_executable(aros-wizard-macos MACOSX_BUNDLE macos_gui.m)
+  target_link_libraries(aros-wizard-macos PRIVATE wizard_core "-framework Cocoa")
+  set_target_properties(aros-wizard-macos PROPERTIES
+    OUTPUT_NAME "AROS Wizard"
+    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/Info.plist.in")
+  install(TARGETS aros-wizard-macos BUNDLE DESTINATION Applications)
+endif()

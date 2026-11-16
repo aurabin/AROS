@@ -89,6 +89,10 @@ AROS_UFH3(IPTR, signal_hook,
 
     struct Task *thisTask = GET_THIS_TASK;
 
+    /* A NULL target cannot have a signal state or CPU affinity. */
+    if (!task)
+        return;
+
 #if defined(__AROSEXEC_SMP__)
     struct KernelBase *KernelBase = __kernelBase;
     int cpunum = KrnGetCPUNumber();
@@ -240,7 +244,7 @@ AROS_UFH3(IPTR, signal_hook,
                     (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) ||
                     (KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))) &&
 #endif
-                    (task->tc_Node.ln_Pri > thisTask->tc_Node.ln_Pri))
+                    (thisTask != NULL && task->tc_Node.ln_Pri > thisTask->tc_Node.ln_Pri))
                 {
                     D(bug("[Exec] %s: Task has higher priority ...\n", __func__);)
                     /*

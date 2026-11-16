@@ -74,6 +74,18 @@
     /* Protect the semaphore structure from multiple access. */
     Forbid();
 
+    /*
+     * A release without a matching obtain must not modify the semaphore.
+     * Otherwise the counters underflow and the ownership/wait queue state
+     * becomes inconsistent. This guard is not an SMP arbitration lock.
+     */
+    if (sigSem->ss_NestCount <= 0)
+    {
+        Permit();
+        Alert(AN_SemCorrupt);
+        return;
+    }
+
     /* Release one on the nest count */
     sigSem->ss_NestCount--;
     sigSem->ss_QueueCount--;

@@ -17,13 +17,21 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
 {
     /* TODO: Introduce AlertContext for this */
 
+    /* Reject invalid pointers before inspecting semaphore fields. */
+    if (!sigSem)
+    {
+        kprintf("%s called with a NULL semaphore!\n", caller->function);
+        Exec_ExtAlert(AN_SemCorrupt, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
+        return FALSE;
+    }
+
     if (KernelBase && KrnIsSuper())
     {
         /* FindTask() is called only here, for speedup */
         struct Task *ThisTask = GET_THIS_TASK;
 
         kprintf("%s called in supervisor mode!!!\n"
-                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, ThisTask->tc_Node.ln_Name);
+                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, (ThisTask && ThisTask->tc_Node.ln_Name) ? ThisTask->tc_Node.ln_Name : "<no task>");
         Exec_ExtAlert(ACPU_PrivErr & ~AT_DeadEnd, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
 
         return FALSE;
@@ -36,7 +44,7 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
         struct Task *ThisTask = GET_THIS_TASK;
 
         kprintf("%s called on a not initialized semaphore!!!\n"
-                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, ThisTask->tc_Node.ln_Name);
+                "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, ThisTask, (ThisTask && ThisTask->tc_Node.ln_Name) ? ThisTask->tc_Node.ln_Name : "<no task>");
         Exec_ExtAlert(AN_SemCorrupt, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
 
         return FALSE;
@@ -142,6 +150,14 @@ ULONG InternalAttemptSemaphore(struct SignalSemaphore *sigSem, struct Task *owne
 {
     struct Task *ThisTask = GET_THIS_TASK;
     ULONG retval = TRUE;
+
+    /*
+     * AttemptSemaphore is a task-context operation. Without a current
+     * task an exclusive request could be mistaken for a shared request
+     * (both owner and ss_Owner may be NULL). Do not mutate the semaphore.
+     */
+    if (!ThisTask || ThisTask->tc_State == TS_REMOVED)
+        return FALSE;
 
     if (!CheckSemaphore(sigSem, caller, SysBase))
         return FALSE;  /* A crude attempt to recover... */

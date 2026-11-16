@@ -30,6 +30,10 @@
 
 int ExecLock__InternObtainSystemLock(struct List *systemList, ULONG mode, ULONG flags)
 {
+    /* Reject invalid modes before modifying interrupt or scheduling state. */
+    if (mode != SPINLOCK_MODE_READ && mode != SPINLOCK_MODE_WRITE)
+        return FALSE;
+
     spinlock_t *sysListLock = NULL;
     D(char *name = "??");
 
@@ -83,9 +87,9 @@ int ExecLock__InternObtainSystemLock(struct List *systemList, ULONG mode, ULONG 
     D(bug("[Exec:Lock] %s(), List='%s' (%p), mode=%s, flags=%d\n", __func__, name, systemList, mode == SPINLOCK_MODE_WRITE ? "write":"read", flags));
     if (sysListLock)
     {
-        if (flags && LOCKF_DISABLE)
+        if (flags & LOCKF_DISABLE)
             Disable();
-        if (flags && LOCKF_FORBID)
+        if (flags & LOCKF_FORBID)
             Forbid();
 
         EXEC_SPINLOCK_LOCK(sysListLock, NULL, mode);
@@ -175,13 +179,17 @@ void * ExecLock__AllocLock()
 
 int ExecLock__ObtainLock(void * lock, ULONG mode, ULONG flags)
 {
+    /* Reject invalid modes before modifying interrupt or scheduling state. */
+    if (mode != SPINLOCK_MODE_READ && mode != SPINLOCK_MODE_WRITE)
+        return FALSE;
+
     D(bug("[Exec:Lock] %s()\n", __func__));
 
     if (lock)
     {
-        if (flags && LOCKF_DISABLE)
+        if (flags & LOCKF_DISABLE)
             Disable();
-        if (flags && LOCKF_FORBID)
+        if (flags & LOCKF_FORBID)
             Forbid();
 
         EXEC_SPINLOCK_LOCK(lock, NULL, mode);

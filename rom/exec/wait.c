@@ -109,7 +109,8 @@
 
     /* And clear them. */
 #if defined(__AROSEXEC_SMP__)
-    __AROS_ATOMIC_AND_L(thisTask->tc_SigRecvd, ~signalSet);
+    /* Clear only bits observed by this Wait(), not unrelated requested bits. */
+    __AROS_ATOMIC_AND_L(thisTask->tc_SigRecvd, ~rcvd);
 #else
     thisTask->tc_SigRecvd &= ~signalSet;
 #endif
