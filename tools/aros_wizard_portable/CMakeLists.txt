@@ -33,3 +33,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     DESTINATION share/applications
     RENAME aros-wizard.desktop)
 endif()
+
+# Native macOS application bundle using Cocoa.
+if(APPLE)
+  enable_language(OBJC)
+  add_executable(aros-wizard-macos MACOSX_BUNDLE macos_gui.m)
+  target_link_libraries(aros-wizard-macos PRIVATE wizard_core "-framework Cocoa")
+  set_target_properties(aros-wizard-macos PROPERTIES
+    OUTPUT_NAME "AROS Wizard"
+    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/Info.plist.in")
+  install(TARGETS aros-wizard-macos BUNDLE DESTINATION Applications)
+endif()
