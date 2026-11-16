@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "distribution": "AROS One",
+  "integration_status": "metadata-only",
+  "upstream_homepage": "https://sites.google.com/view/arosone",
+  "editions": [
+    {"id": "x86_64-abiv11", "architecture": "x86_64", "abi": "ABIv11", "upstream_version_observed": "1.3", "enabled": false},
+    {"id": "i386-abiv0", "architecture": "i386", "abi": "ABIv0", "upstream_version_observed": "2.9", "enabled": false}
+  ],
+  "components": [],
+  "redistribution_authorized": false,
+  "notes": "Version labels are observations, not pinned releases. Verify upstream artifacts, hashes and permissions before packaging."
+}
