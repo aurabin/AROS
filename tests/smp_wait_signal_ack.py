@@ -5,7 +5,7 @@ import re
 import sys
 
 src = (Path(__file__).resolve().parents[1] / "rom/exec/wait.c").read_text()
-smp = re.search(r"#if defined\(__AROSEXEC_SMP__\)\s*__AROS_ATOMIC_AND_L\(thisTask->tc_SigRecvd,\s*~rcvd\);", src)
+smp = re.search(r"#if defined\(__AROSEXEC_SMP__\)(?:\s|/\*.*?\*/|//[^\n]*\n)*__AROS_ATOMIC_AND_L\(thisTask->tc_SigRecvd,\s*~rcvd\);", src, re.S)
 errors = []
 if not smp:
     errors.append("SMP Wait must acknowledge the observed signal mask")
