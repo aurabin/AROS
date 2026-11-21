@@ -1,0 +1,26 @@
+name: AROS Windows launcher smoke tests
+
+on:
+  push:
+    branches:
+      - feature/aros-windows
+  pull_request:
+    paths:
+      - 'windows/**'
+      - '.github/workflows/aros-windows-smoke.yml'
+
+jobs:
+  launcher-tests:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python sources
+        run: python -m compileall -q windows
+      - name: Run launcher unit tests
+        run: python -m unittest discover -s windows/tests -v
